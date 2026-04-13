@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eigenfaces — LA Mini Project</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --surface: #ede8df;
+    --surface2: #e4ddd2;
+    --border: #cfc8bb;
+    --ink: #1a1612;
+    --muted: #7a7060;
+    --accent: #b5451b;
+    --accent-dim: rgba(181,69,27,0.1);
+    --blue: #1b4b8a;
+    --blue-dim: rgba(27,75,138,0.1);
+    --green: #2a6b3c;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'DM Serif Display', serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-weight: 300;
+    line-height: 1.75;
+  }
+
+  /* Header */
+  .header {
+    background: var(--ink);
+    color: var(--bg);
+    padding: 56px 64px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    border: 60px solid rgba(245,240,232,0.04);
+  }
+
+  .header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: 100px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    border: 40px solid rgba(245,240,232,0.03);
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 24px;
+    display: block;
+  }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    margin-bottom: 20px;
+    max-width: 700px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: rgba(245,240,232,0.5);
+  }
+
+  .header-sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: rgba(245,240,232,0.4);
+    letter-spacing: 0.08em;
+    margin-top: 8px;
+  }
+
+  /* Copy boxes */
+  .copy-wrap {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 64px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .copy-box {
+    background: white;
+    border: 1.5px solid var(--accent);
+    border-radius: 4px;
+    padding: 20px 24px;
+  }
+
+  .copy-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .copy-label::before {
+    content: '→';
+    font-size: 12px;
+  }
+
+  .copy-text {
+    font-family: var(--display);
+    font-size: 15px;
+    color: var(--ink);
+    line-height: 1.5;
+    user-select: all;
+    cursor: text;
+  }
+
+  .copy-hint {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+
+  /* Main */
+  .main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 52px 64px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-size: 30px;
+    font-weight: 400;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    font-size: 15px;
+    color: #3a3028;
+    margin-bottom: 14px;
+    max-width: 680px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  /* Info grid */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+
+  .info-cell {
+    background: var(--surface);
+    padding: 18px 22px;
+  }
+
+  .info-cell-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .info-cell-value {
+    font-family: var(--display);
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+
+  /* Pipeline */
+  .pipeline {
+    margin: 24px 0;
+  }
+
+  .pipe-step {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 0;
+    position: relative;
+  }
+
+  .pipe-step:not(:last-child) .pipe-left::after {
+    content: '';
+    position: absolute;
+    left: 23px;
+    top: 48px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .pipe-left {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 12px;
+  }
+
+  .pipe-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .pipe-right {
+    padding: 8px 0 32px 20px;
+  }
+
+  .pipe-step-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .pipe-step-name {
+    font-family: var(--display);
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+
+  .pipe-step-desc {
+    font-size: 14px;
+    color: #4a4038;
+    line-height: 1.65;
+    max-width: 580px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-red { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(181,69,27,0.2); }
+  .tag-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(27,75,138,0.2); }
+  .tag-green { background: rgba(42,107,60,0.08); color: var(--green); border: 1px solid rgba(42,107,60,0.2); }
+
+  /* Output */
+  .output-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 24px 0;
+  }
+
+  .output-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 22px 24px;
+  }
+
+  .output-icon { font-size: 24px; margin-bottom: 10px; }
+  .output-title {
+    font-family: var(--display);
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .output-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* Viva */
+  .viva-item {
+    border-left: 3px solid var(--ink);
+    padding: 14px 0 14px 20px;
+    margin: 14px 0;
+  }
+
+  .viva-concept {
+    font-family: var(--display);
+    font-size: 17px;
+    margin-bottom: 8px;
+  }
+
+  .viva-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .viva-key {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-top: 2px;
+  }
+
+  .viva-val { color: #3a3028; line-height: 1.6; }
+
+  /* Code block */
+  .code-block {
+    background: var(--ink);
+    color: #c8c0b4;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 2;
+    padding: 28px 32px;
+    border-radius: 6px;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+
+  .code-comment { color: #5a5248; }
+  .code-kw { color: #e07b3a; }
+  .code-str { color: #7aab6e; }
+
+  footer {
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    text-align: center;
+    padding: 32px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    margin-top: 60px;
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <span class="badge">UE24MA241B — Orange-2 Mini Project · PES University CSE</span>
+  <h1>Face Recognition<br><em>using</em> Eigenfaces</h1>
+  <p class="header-sub">Linear Algebra · Python · AT&T Olivetti Face Database · sklearn.datasets</p>
+</header>
+
+<!-- FORM COPY-PASTE -->
+<div class="copy-wrap">
+  <div class="copy-box">
+    <div class="copy-label">Title of the Project — copy & paste</div>
+    <div class="copy-text">Face Recognition System Using Eigenfaces and PCA-Based Subspace Projection</div>
+    <div class="copy-hint">↑ Click to select all, then copy</div>
+  </div>
+  <div class="copy-box">
+    <div class="copy-label">Dataset Identified — copy & paste</div>
+    <div class="copy-text">AT&T Olivetti Face Database — accessed via sklearn.datasets.fetch_olivetti_faces() — 400 grayscale face images, 40 subjects, 10 images each</div>
+    <div class="copy-hint">↑ Click to select all, then copy</div>
+  </div>
+</div>
+
+<main class="main">
+
+  <!-- PROBLEM STATEMENT -->
+  <div class="section-label">01 — Problem Statement</div>
+  <h2>What are we building?</h2>
+  <p>Given a database of known faces, can we identify who a new face belongs to — using only linear algebra, no machine learning?</p>
+  <p>Each face image is a grid of pixel values. A 64×64 image is a vector of 4096 numbers. The key insight of Eigenfaces is that all human faces don't randomly fill this 4096-dimensional space — they cluster in a small subspace. We find that subspace using eigendecomposition, project every face into it, and identify unknown faces by finding the closest match. Pure linear algebra, real results.</p>
+
+  <div class="info-grid">
+    <div class="info-cell">
+      <div class="info-cell-label">Dataset</div>
+      <div class="info-cell-value">AT&T Olivetti Face Database</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">Access</div>
+      <div class="info-cell-value">sklearn.datasets.fetch_olivetti_faces()</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">Size</div>
+      <div class="info-cell-value">400 images · 40 subjects · 64×64 px</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">Domain Knowledge</div>
+      <div class="info-cell-value">None needed — just pixels</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">Demo Date</div>
+      <div class="info-cell-value">April 6–8, 2026</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-cell-label">Origin</div>
+      <div class="info-cell-value">AT&T Labs Cambridge, 1994</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- PIPELINE -->
+  <div class="section-label">02 — Linear Algebra Pipeline</div>
+  <h2>Step-by-step workflow</h2>
+  <p>Every step of the prescribed pipeline is used and naturally motivated by the face recognition problem.</p>
+
+  <div class="pipeline">
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 01 · Matrix Representation</div>
+        <div class="pipe-step-name">Faces as Vectors</div>
+        <div class="pipe-step-desc">Load 400 face images. Flatten each 64×64 image into a 4096-dimensional vector. Stack all 400 vectors as rows to form the data matrix A (400 × 4096). Each row is one face. The matrix represents the entire face database.</div>
+        <div class="tags">
+          <span class="tag tag-red">Matrices</span>
+          <span class="tag tag-red">Linear Transformations</span>
+          <span class="tag tag-red">Systems of Equations</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 02 · Matrix Simplification</div>
+        <div class="pipe-step-name">Mean-Centering & RREF</div>
+        <div class="pipe-step-desc">Subtract the mean face from every face vector to center the data. Apply RREF to understand the rank of the face matrix — how many truly independent facial patterns exist among 400 images. This reveals the effective dimensionality of face space.</div>
+        <div class="tags">
+          <span class="tag tag-red">Gaussian Elimination</span>
+          <span class="tag tag-red">RREF</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 03 · Structure of the Space</div>
+        <div class="pipe-step-name">Face Space Analysis</div>
+        <div class="pipe-step-desc">Compute the rank and nullity of the face matrix. The column space defines "face space" — the subspace that all valid face images live in. The null space contains pixel patterns that carry no facial information. We establish that real faces occupy a tiny corner of the full pixel space.</div>
+        <div class="tags">
+          <span class="tag tag-blue">Vector Spaces</span>
+          <span class="tag tag-blue">Subspaces</span>
+          <span class="tag tag-blue">Rank & Nullity</span>
+          <span class="tag tag-blue">Column Space</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 04 · Remove Redundancy</div>
+        <div class="pipe-step-name">Independent Facial Patterns</div>
+        <div class="pipe-step-desc">Many faces share similar features (two eyes, a nose, a mouth). Extract a linearly independent basis from the face vectors, removing redundant faces that don't add new information. This reduces 400 faces to a compact set of independent basis faces.</div>
+        <div class="tags">
+          <span class="tag tag-blue">Linear Independence</span>
+          <span class="tag tag-blue">Basis Selection</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 05 · Orthogonalization</div>
+        <div class="pipe-step-name">Gram–Schmidt on Face Basis</div>
+        <div class="pipe-step-desc">Apply Gram–Schmidt orthogonalization to the independent face basis vectors to produce orthogonal "pure facial direction" vectors. Orthogonality ensures that when we project a face onto this basis, each component measures a truly independent facial feature.</div>
+        <div class="tags">
+          <span class="tag tag-green">Orthogonal Vectors</span>
+          <span class="tag tag-green">Gram–Schmidt</span>
+          <span class="tag tag-green">Orthogonal Bases</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 06 · Projection</div>
+        <div class="pipe-step-name">Project Faces onto Eigenface Space</div>
+        <div class="pipe-step-desc">Project every face (training and test) onto the orthogonal eigenface subspace. Each face is now represented as a short coordinate vector (weights) in eigenface space instead of 4096 pixel values. This is the key compression step — faces become small, comparable fingerprints.</div>
+        <div class="tags">
+          <span class="tag tag-green">Orthogonal Projections</span>
+          <span class="tag tag-green">Projection onto Subspaces</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 07 · Prediction via Least Squares</div>
+        <div class="pipe-step-name">Identify Unknown Faces</div>
+        <div class="pipe-step-desc">To recognize a test face, solve the least squares problem: find the training face whose projection minimizes the squared distance to the test face's projection. Use x̂ = (AᵀA)⁻¹Aᵀb to find the best match. The person with minimum reconstruction error is the predicted identity.</div>
+        <div class="tags">
+          <span class="tag tag-green">Least Squares Solution</span>
+          <span class="tag tag-green">Matrix Transpose & Inverse</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 08 · Pattern Discovery</div>
+        <div class="pipe-step-name">Eigenfaces via Covariance Matrix</div>
+        <div class="pipe-step-desc">Compute the covariance matrix C = AᵀA of the mean-centered face matrix. Find its eigenvalues and eigenvectors. The eigenvectors are the Eigenfaces — ghostly face-shaped images that represent the dominant modes of variation across all faces in the database. Large eigenvalues = more important facial features.</div>
+        <div class="tags">
+          <span class="tag tag-red">Eigenvalues</span>
+          <span class="tag tag-red">Eigenvectors</span>
+          <span class="tag tag-red">Covariance Matrix</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pipe-step">
+      <div class="pipe-left"><div class="pipe-dot"></div></div>
+      <div class="pipe-right">
+        <div class="pipe-step-label">Step 09 · System Simplification</div>
+        <div class="pipe-step-name">Diagonalization & Dimensionality Reduction</div>
+        <div class="pipe-step-desc">Diagonalize the covariance matrix as C = PDP⁻¹. Keep only the top-k eigenvectors (typically k=50 out of 4096). Show via a scree plot that these k components capture 95%+ of variance. The system is reduced from 4096 dimensions to k — same recognition accuracy, fraction of the computation.</div>
+        <div class="tags">
+          <span class="tag tag-red">Diagonalization</span>
+          <span class="tag tag-red">Symmetric Matrix Decomposition</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- OUTPUT -->
+  <div class="section-label">03 — Final Output</div>
+  <h2>What the demo looks like</h2>
+
+  <div class="output-grid">
+    <div class="output-card">
+      <div class="output-icon">👻</div>
+      <div class="output-title">Eigenface Gallery</div>
+      <div class="output-desc">The top-20 eigenfaces displayed as ghostly face images — the "basis faces" of the entire dataset. Visually striking and immediately impressive to any examiner.</div>
+    </div>
+    <div class="output-card">
+      <div class="output-icon">📉</div>
+      <div class="output-title">Scree Plot</div>
+      <div class="output-desc">A graph of eigenvalues showing how the top-k components capture variance. Demonstrates mathematically why we can compress 4096 dimensions to just 50.</div>
+    </div>
+    <div class="output-card">
+      <div class="output-icon">🔍</div>
+      <div class="output-title">Recognition Result</div>
+      <div class="output-desc">Feed a test face → system outputs the predicted identity with the closest matching training face shown side by side. Accuracy shown across all 40 subjects.</div>
+    </div>
+    <div class="output-card">
+      <div class="output-icon">🖼️</div>
+      <div class="output-title">Reconstruction at k eigenfaces</div>
+      <div class="output-desc">Show how a face is reconstructed using k=5, 20, 50, 100 eigenfaces — from blurry to sharp. Visually demonstrates the power of eigendecomposition and diagonalization.</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- VIVA PREP -->
+  <div class="section-label">04 — Viva Preparation</div>
+  <h2>Concept → Purpose → Outcome</h2>
+  <p>For every concept used, be ready to answer all three. Here are the exact answers.</p>
+
+  <div class="viva-item">
+    <div class="viva-concept">Matrix Representation</div>
+    <div class="viva-row"><span class="viva-key">What</span><span class="viva-val">Each 64×64 face image is flattened into a 4096-dimensional vector. All 400 vectors are stacked into matrix A.</span></div>
+    <div class="viva-row"><span class="viva-key">Why</span><span class="viva-val">Linear algebra operates on matrices. Representing faces as vectors lets us apply all matrix operations to face data.</span></div>
+    <div class="viva-row"><span class="viva-key">Outcome</span><span class="viva-val">A 400 × 4096 matrix where each row is a complete face — ready for decomposition.</span></div>
+  </div>
+
+  <div class="viva-item">
+    <div class="viva-concept">RREF & Rank Analysis</div>
+    <div class="viva-row"><span class="viva-key">What</span><span class="viva-val">Row reduce the face matrix to find its rank — how many linearly independent face patterns exist.</span></div>
+    <div class="viva-row"><span class="viva-key">Why</span><span class="viva-val">400 faces don't all carry unique information. Rank tells us the true dimensionality of the face space.</span></div>
+    <div class="viva-row"><span class="viva-key">Outcome</span><span class="viva-val">Confirmed that the effective rank is much lower than 400 — many faces are linearly dependent combinations of others.</span></div>
+  </div>
+
+  <div class="viva-item">
+    <div class="viva-concept">Gram–Schmidt Orthogonalization</div>
+    <div class="viva-row"><span class="viva-key">What</span><span class="viva-val">Convert the independent face basis vectors into a set of orthogonal vectors.</span></div>
+    <div class="viva-row"><span class="viva-key">Why</span><span class="viva-val">Orthogonal bases make projection simple and exact — each eigenface captures a completely independent aspect of facial variation.</span></div>
+    <div class="viva-row"><span class="viva-key">Outcome</span><span class="viva-val">An orthogonal set of basis vectors that span face space — a clean coordinate system for all faces.</span></div>
+  </div>
+
+  <div class="viva-item">
+    <div class="viva-concept">Eigenvalues & Eigenvectors (Eigenfaces)</div>
+    <div class="viva-row"><span class="viva-key">What</span><span class="viva-val">Eigendecomposition of the covariance matrix AᵀA. Each eigenvector, reshaped to 64×64, is an Eigenface.</span></div>
+    <div class="viva-row"><span class="viva-key">Why</span><span class="viva-val">The eigenvectors point in the directions of maximum variance across all faces — they capture what makes faces different from each other.</span></div>
+    <div class="viva-row"><span class="viva-key">Outcome</span><span class="viva-val">The top eigenfaces (ghostly face images) that together form a complete basis for the face space.</span></div>
+  </div>
+
+  <div class="viva-item">
+    <div class="viva-concept">Orthogonal Projection</div>
+    <div class="viva-row"><span class="viva-key">What</span><span class="viva-val">Project each face onto the eigenface subspace spanned by the top-k eigenvectors.</span></div>
+    <div class="viva-row"><span class="viva-key">Why</span><span class="viva-val">The projection gives a compact k-dimensional representation (weights) of every face. Comparing weights is far easier than comparing 4096 pixels.</span></div>
+    <div class="viva-row"><span class="viva-key">Outcome</span><span class="viva-val">Every face is now a short vector of k weights — its "face fingerprint" in eigenspace.</span></div>
+  </div>
+
+  <div class="viva-item">
+    <div class="viva-concept">Least Squares for Recognition</div>
+    <div class="viva-row"><span class="viva-key">What</span><span class="viva-val">Find the training face that minimizes the squared distance to a test face's eigenspace projection.</span></div>
+    <div class="viva-row"><span class="viva-key">Why</span><span class="viva-val">Recognition is an overdetermined system — we use least squares to find the best match across all training samples.</span></div>
+    <div class="viva-row"><span class="viva-key">Outcome</span><span class="viva-val">Predicted identity of the test face with a confidence score based on reconstruction error.</span></div>
+  </div>
+
+  <div class="viva-item">
+    <div class="viva-concept">Diagonalization</div>
+    <div class="viva-row"><span class="viva-key">What</span><span class="viva-val">Express the covariance matrix as C = PDP⁻¹ where D is diagonal (eigenvalues) and P contains eigenvectors.</span></div>
+    <div class="viva-row"><span class="viva-key">Why</span><span class="viva-val">Diagonalization lets us rank eigenvalues and select only the top-k, compressing the model from 4096 to ~50 dimensions with minimal information loss.</span></div>
+    <div class="viva-row"><span class="viva-key">Outcome</span><span class="viva-val">A compressed face recognition model that uses 50 dimensions instead of 4096, with 90%+ recognition accuracy.</span></div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SETUP -->
+  <div class="section-label">05 — Dataset & Setup</div>
+  <h2>Zero setup required</h2>
+  <p>The dataset is built directly into scikit-learn — no downloading, no Kaggle account, no file management. One function call loads all 400 face images, pre-labelled and ready to use.</p>
+
+  <div class="code-block">
+    <span class="code-comment"># Setup — just one pip install</span><br>
+    pip install scikit-learn numpy matplotlib<br><br>
+    <span class="code-comment"># Load the dataset — everything in one line</span><br>
+    <span class="code-kw">from</span> sklearn.datasets <span class="code-kw">import</span> fetch_olivetti_faces<br>
+    data = fetch_olivetti_faces()<br>
+    X = data.images &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># shape: (400, 64, 64)</span><br>
+    y = data.target &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="code-comment"># labels: 0–39 (40 subjects, 10 images each)</span><br><br>
+    <span class="code-comment"># Flatten to matrix form</span><br>
+    <span class="code-kw">import</span> numpy <span class="code-kw">as</span> np<br>
+    A = X.reshape(400, -1) &nbsp;<span class="code-comment"># shape: (400, 4096) — your data matrix A</span>
+  </div>
+
+</main>
+
+<footer>
+  UE24MA241B — Linear Algebra and Its Applications &nbsp;·&nbsp; PES University, Dept. of CSE &nbsp;·&nbsp; Orange-2 Mini Project &nbsp;·&nbsp; Demo: April 6–8, 2026
+</footer>
+
+</body>
+</html>
